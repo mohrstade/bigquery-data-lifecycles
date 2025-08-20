@@ -1,0 +1,31 @@
+config {
+    type: "incremental",
+    protected: true,
+    description: "We aggregate sessions by source / medium per day",
+    bigquery: {
+      partitionBy: "session_date",
+      clusterBy: ["source","medium"],
+      partitionExpirationDays: 731
+    },
+    assertions: {
+      rowConditions: ["sessions > 4"]
+    }
+}
+with sessions_agg as (
+SELECT
+    session_date
+    ,session_first_touch.source as source
+    ,session_first_touch.medium as medium
+    ,COUNT(*) AS sessions
+FROM
+  ${ref("ga4_sessions")}
+group by all
+)
+
+select
+  *
+  ,sum(sessions)over() all_sessions
+  ,sum(if(sessions > 4, sessions, 0))over() as k_anonymity
+  ,sum(if(sessions > 4, sessions, 0))over() / sum(sessions)over() * 100 as k_anonymity_session_share
+from
+  sessions_agg

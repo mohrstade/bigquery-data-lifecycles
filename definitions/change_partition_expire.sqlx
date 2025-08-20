@@ -1,0 +1,8 @@
+-- Change Partition Expiration
+
+config {
+    type: "operations"
+}
+
+ALTER TABLE ${ref("agg_sessions_attribution")}
+SET OPTIONS ( partition_expiration_days = 731)

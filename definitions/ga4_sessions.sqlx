@@ -1,0 +1,32 @@
+
+config {
+  type: "table",
+  uniqueKey: ["session_id","session_date"],
+  assertions: {
+    uniqueKey: ["session_id","session_date"]
+  }
+}
+
+with sessions as (
+SELECT
+  parse_date('%Y%m%d',event_date) as session_date
+  ,farm_fingerprint(concat(user_pseudo_id, (select value.int_value from unnest(event_params) where key = "ga_session_id"))) as session_id
+  ,array_agg(
+    if(
+      (select value.string_value from unnest(event_params) where key = 'source') is null and (select value.string_value from unnest(event_params) where key = 'medium') is null, null,
+      struct((select value.string_value from unnest(event_params) where key = 'source') as source,(select value.string_value from unnest(event_params) where key = 'medium')as medium)
+    )
+  ignore nulls order by event_timestamp) as utm_source_medium
+  --,min_by((select value.string_value from unnest(event_params) where key = 'source'),event_timestamp) as utm_source
+  --,min_by((select value.string_value from unnest(event_params) where key = 'medium'),event_timestamp) as utm_medium
+from
+${ref("events_*")}
+group by all
+)
+
+select
+  *
+  ,utm_source_medium[safe_offset(0)] as session_first_touch
+  ,array_reverse(utm_source_medium)[safe_offset(0)] as session_last_touch
+from
+  sessions
