@@ -1,0 +1,15 @@
+config {
+    type: "operations",
+    hasOutput: true
+}
+
+DECLARE table_string STRING;
+
+FOR _table_suffix IN (SELECT distinct _table_suffix  FROM `moritz-test-projekt.analytics_262445815_Copy.events_* order by 1`)
+DO
+    SET table_string = concat(`moritz-test-projekt.analytics_262445815_Copy.events_`,_table_suffix);
+    ALTER TABLE table_string
+    SET OPTIONS (
+        expiration_timestamp = TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 90 DAY) -- needed be changed
+    );
+END FOR;

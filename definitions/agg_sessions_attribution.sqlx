@@ -20,6 +20,7 @@ SELECT
 FROM
   ${ref("ga4_sessions")}
 group by all
+-- having sessions > 4 -- exclude rows with less then 5 sessions
 )
 
 select
